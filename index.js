@@ -7,6 +7,8 @@ const tubeBottom = new Image();
 const bird = new Image();
 const field = new Image();
 const showScore = new Image();
+const currentScoreImage = new Image();
+const bestScoreImage = new Image();
 const deathMenu = new Image();
 const silverMedal = new Image();
 const goldMedal = new Image();
@@ -24,7 +26,7 @@ goldMedal.src = 'image/goldMedal.png';
 buttonPlay.src = 'image/buttonPlay.png';
 
 const GAP = 50;
-let GRAV = 1;
+let grav = 1;
 const POSX = 10;
 let posY = 100;
 let score = {
@@ -45,9 +47,9 @@ class drawFrame {
     draw() {
         ctx.drawImage(bg, 0, 0, 147, 260);
         ctx.drawImage(bird, POSX, posY);
-        if (tubes[tubes.length - 1].x === 20) {
+        if (tubes[tubes.length - 1].x === 10) {
             tubes.push({
-                x: 100,
+                x: 147,
                 y: Math.floor(Math.random() * (tubeTop.height)) - tubeTop.height,
             });
         }
@@ -60,39 +62,37 @@ class drawFrame {
 
         ctx.drawImage(field, 0, canvas.height - field.height);
 
-        posY += GRAV;
-        GRAV += 0.05;
-
-        if (posY === canvas.height - field.height) {
-            first.restart();
-        }
+        posY += grav;
+        grav += 0.03;
 
         // Отрисовка счёта
         ctx.drawImage(showScore, 120, 20);
 
+        const bestScore = localStorage.getItem('bestScore') ? localStorage.getItem('bestScore') : 0;
+        currentScoreImage.src = `image/numbers/mini/${score.current}mini.png`;
+        bestScoreImage.src = `image/numbers/mini/${bestScore}mini.png`;
 
         // Столкновение
         for (let i = 0; i < tubes.length; i++) {
-            if (POSX + bird.width >= tubes[i].x
+            if (
+                posY >= canvas.height - field.height
+                || POSX + bird.width >= tubes[i].x
                 && POSX <= tubes[i].x + tubeTop.width
                 && (posY <= tubes[i].y + tubeTop.height
-                    || posY + bird.height >= tubes[i].y + tubeTop.height + GAP)
+                    || posY + bird.height >= tubes[i].y + tubeTop.height + GAP
+                    || posY === canvas.height - field.height
+                )
             ) {
                 ctx.drawImage(deathMenu, 10, 100);
                 ctx.drawImage(buttonPlay, 65, 120);
+                ctx.drawImage(bestScoreImage, 105, 140);
+                ctx.drawImage(currentScoreImage, 105, 118);
 
-                const bestScore = localStorage.getItem('bestScore');
-
-                if (bestScore == null
-                    || score.current > bestScore
-                ) {
+                if (score.current > bestScore) {
                     ctx.drawImage(goldMedal, 26, 120);
+                    localStorage.setItem('bestScore', score.current);
                 } else {
                     ctx.drawImage(silverMedal, 26, 120);
-                }
-
-                if (score.current > score.best) {
-                    localStorage.setItem('bestScore', score.current);
                 }
 
                 isGameOver = true;
@@ -115,7 +115,8 @@ class drawFrame {
     }
 
     reset(event) {
-        if (event.pageX >= 75
+        if (
+            event.pageX >= 75
             && event.pageX <= 85
             && event.pageY >= 125
             && event.pageY <= 140) {
@@ -146,7 +147,7 @@ class Bird {
         document.addEventListener('click', () => {
             bird.src = 'image/birdUp.png';
             posY -= 20;
-            GRAV = 1;
+            grav = 1;
 
             setTimeout(() => {
                 bird.src = 'image/birdDown.png';
